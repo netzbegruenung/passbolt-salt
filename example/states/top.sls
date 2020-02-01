@@ -1,0 +1,4 @@
+base:
+  '*':
+    - important_secrets
+

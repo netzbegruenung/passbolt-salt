@@ -1,0 +1,4 @@
+base:
+  'myappserver*':
+    - passbolt.myapp
+
