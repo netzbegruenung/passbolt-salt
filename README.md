@@ -10,7 +10,7 @@ MIT
 
 2. Go to directory, run
     ```
-    python3 setup.py
+    python3 setup.py install
     ```
 
 3. Create an Passbolt account for the Salt master.
