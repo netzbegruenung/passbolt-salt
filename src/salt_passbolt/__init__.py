@@ -9,7 +9,7 @@ def get_password_list(passbolt_obj, group_uuid):
     Get list of passwords for group UUID
     """
     result = list()
-    url = ("/resources.json?/resources.json?filter[is-shared-with-group]" +
+    url = ("/resources.json?filter[is-shared-with-group]" +
            "={}&api-version=v2".format(group_uuid))
     for i in passbolt_obj.get(url)["body"]:  # pylint: disable=C0301
         result.append({
