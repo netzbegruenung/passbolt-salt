@@ -37,6 +37,7 @@ MIT
 7. Create Pillar sls files where required with the content, replace the group UUID. Look into the example directory. Hint: you can find the Group UUID with the network tool of the browser by clicking on a group.
     ```
     #!py
+    from salt_passbolt import fetch_passbolt_passwords
     fetch_passbolt_passwords("27b9abd4-af9b-4c9e-9af1-cf8cb963680c")
     ```
 
