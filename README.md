@@ -1,7 +1,10 @@
-# passbolt-salt
-Script to retrieve Passbolt passwords for Saltstack Pillars
+# About
+This Python module retrieves passwords for Passbolt groups to make them available in Saltstack Pillar.
 
-# Installation
+# License
+MIT
+
+# Setup
 
 1. Clone this repo 
 
