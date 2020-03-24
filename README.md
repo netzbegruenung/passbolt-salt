@@ -8,7 +8,7 @@ MIT
 
 1. Clone this repo 
 
-2. Go to directory, run (requires python3-setuptools)
+2. Go to directory, run (requires `python3-setuptools`)
     ```
     python3 setup.py install
     ```
@@ -20,7 +20,7 @@ MIT
 5. Create a `/etc/salt/passbolt.ini` file with the following content:
     ```
     [PASSBOLT]
-    SERVER = https://pass.netzbegruenung.de
+    SERVER = https://passbolt.example.com
     #SERVER_PUBLIC_KEY_FILE = <optional: server_public.asc>
     USER_FINGERPRINT = [REPLACE WITH GPG KEY FINGERPRINT]
     USER_PUBLIC_KEY_FILE = /etc/salt/passbolt_public.asc
