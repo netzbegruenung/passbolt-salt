@@ -8,7 +8,7 @@ MIT
 
 1. Clone this repo 
 
-2. Go to directory, run
+2. Go to directory, run (requires python3-setuptools)
     ```
     python3 setup.py install
     ```
