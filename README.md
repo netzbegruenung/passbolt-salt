@@ -17,6 +17,11 @@ MIT
 
 4. Copy the private and public PGP key files to `/etc/salt`.
 
+5. Import the private key with
+    ```
+    gpg --import /etc/salt/passbolt_private.asc
+    ```
+
 5. Create a `/etc/salt/passbolt.ini` file with the following content:
     ```
     [PASSBOLT]
