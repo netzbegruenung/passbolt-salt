@@ -30,9 +30,22 @@ def generate_pillar(passbolt_obj, group_uuid):
     for i in result:
         resource = passbolt_obj.get("/secrets/resource/{}.json?api-version=v2".
                                     format(i["id"]))
-        salt['passbolt'][i["id"]] = passbolt_obj.decrypt(
-            resource["body"]["data"])
+        data = passbolt_obj.decrypt(resource["body"]["data"])
+        salt['passbolt'][i["id"]] = decode_json(data)
     return salt
+
+
+def decode_json(data):
+    """
+    The passbolt API returns legacy strings or JSON objects.
+    Try to decode JSON, and if invalid return string.
+    """
+    import json
+    try:
+        data = json.loads(data)
+    except json.decoder.JSONDecodeError:
+        return data
+    return data["password"]
 
 
 def fetch_passbolt_passwords(group_uuid):
