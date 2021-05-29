@@ -1,11 +1,6 @@
 # About
 This Python module retrieves passwords for Passbolt groups to make them available in Saltstack Pillar.
 
-For development, a local file named `[UUID].txt` can be placed in the pillar directory. It needs to contain lines with the format
-```
-3ec2a739-8e51-4c67-89fb-4bbfe9147e17:MY_SECRET
-```
-
 # License
 MIT
 
@@ -48,18 +43,8 @@ MIT
     ```
     #!py
     def run():
-        passbolt_group = "27b9abd4-af9b-4c9e-9af1-cf8cb963680c"
-        from os import path
-        file_path = path.join(path.dirname(path.realpath(__file__)), passbolt_group + ".txt")
-        if path.isfile(file_path):
-            with open(file_path) as f:
-                data = {"passbolt": {}}
-                for line in f.readlines():
-                    data["passbolt"][line.split(':')[0]] = line.split(':')[1]
-            return data
-        else:
-            from salt_passbolt import fetch_passbolt_passwords
-            return fetch_passbolt_passwords(passbolt_group)
+        from salt_passbolt import fetch_passbolt_passwords
+        return fetch_passbolt_passwords("27b9abd4-af9b-4c9e-9af1-cf8cb963680c")
     ```
 
 9. In state, reference secrets with their UUID. See the `example/salt/important_secrets/files/secret.conf`. Hint: you can find the secret UUID in the URL of your browser by clicking on the checkbox of a secret.
