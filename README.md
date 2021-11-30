@@ -39,14 +39,14 @@ MIT
     chmod 600 /etc/salt/passbolt*
     ```
 
-8. Create Pillar sls files where required with the content, replace the group UUID. Look into the example directory. Hint: you can find the Group UUID with the network tool of the browser by clicking on a group.
+8. Create Pillar sls files for the different Salt minions. Use the example below as content for the sls files and replace the group UUID. Hint: you can find the Group UUID with the network tool of the browser by clicking on a group.
     ```
     #!py
     def run():
         from salt_passbolt import fetch_passbolt_passwords
         return fetch_passbolt_passwords("27b9abd4-af9b-4c9e-9af1-cf8cb963680c")
     ```
-
+    You can also look into the [example](example) directory.
 9. In state, reference secrets with their UUID. See the `example/salt/important_secrets/files/secret.conf`. Hint: you can find the secret UUID in the URL of your browser by clicking on the checkbox of a secret.
     ```
     password={{ pillar['passbolt']['3ec2a739-8e51-4c67-89fb-4bbfe9147e17'] }}
