@@ -39,7 +39,7 @@ MIT
     chmod 600 /etc/salt/passbolt*
     ```
 
-8. Create Pillar sls files for the different Salt minions. Use the example below as content for the sls files and replace the group UUID. Hint: you can find the Group UUID in the URL in Passbolt admin interface when editing a group.
+8. Create Pillar sls files for the different Salt minions. Use the example below as content for the sls files and replace the group UUID. Hint: you can find the group UUID in the URL of the Passbolt admin interface when editing a group.
     ```
     #!py
     def run():
