@@ -54,7 +54,7 @@ MIT
 
 # YAML Replacement Structure
 
-If the Passbolt server is not available, for example during local development, file with the following format can replace the Python code mentioned in step 8:
+If the Passbolt server is not available, for example during local development, a file with the following format can replace the Python code mentioned in step 8:
 ```
 passbolt:
   3ec2a739-8e51-4c67-89fb-4bbfe9147e17: MY_SECRET
