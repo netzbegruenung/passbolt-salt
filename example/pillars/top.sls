@@ -1,4 +1,3 @@
 base:
-  'myappserver*':
-    - passbolt.myapp
-
+  'myappserver.example.com':
+    - passbolt.pwgroup
