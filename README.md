@@ -44,7 +44,7 @@ Additionally, it is possible to only have one source of truth for passwords for 
 # Use Passwords of Passbolt Group in Pillar
 Look into the [example](example) directory to see how the integration is done.
 
-1. Create Pillar sls files for the different Salt minions, insert the content below and eplace the group UUID.
+1. Create Pillar sls files for the different Salt minions, insert the content below and replace the group UUID.
     ```python
     #!py
     def run():
