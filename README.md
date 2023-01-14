@@ -1,7 +1,7 @@
 # About
 This Python module allows you to manage secrets for Saltstack via Passbolt. This makes managing secrets easier than manually encrypting them and storing the encrpyted password in the Saltstack repository.
 
-Additionally, it is possible to only have one source of truth for passwords for users and IT infrastructure while being able to manage access for each password. That means that all users can contribute to the Saltack configuration and manage (add & change) secrets within their responsibility.
+Additionally, it is possible to only have one source of truth for passwords for users and IT infrastructure while being able to manage access for each password. That means that all users can contribute to the Saltack configuration and manage (view/add/change) secrets within their responsibility.
 
 # License
 [MIT](LICENSE)
