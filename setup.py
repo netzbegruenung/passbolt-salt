@@ -7,7 +7,7 @@ from setuptools import find_packages, setup
 
 setup(
     name="salt-passbolt",
-    version="1.0.1",
+    version="1.0.2",
     packages=find_packages("src"),
     package_dir={'': 'src'},
     include_package_data=True,
