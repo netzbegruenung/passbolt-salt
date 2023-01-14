@@ -30,8 +30,9 @@ def generate_pillar(passbolt_obj, group_uuid):
     for i in result:
         resource = passbolt_obj.get("/secrets/resource/{}.json?api-version=v2".
                                     format(i["id"]))
-        data = passbolt_obj.decrypt(resource["body"]["data"])
-        salt['passbolt'][i["id"]] = decode_json(data)
+        data = decode_json(passbolt_obj.decrypt(resource["body"]["data"]))
+        assert data, "Passbolt returned an empty secret."
+        salt['passbolt'][i["id"]] = data
     return salt
 
 
