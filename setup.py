@@ -1,30 +1,11 @@
 #!/usr/bin/env python3
 """
-Setup script
+Minimal setup.py for legacy builds.
+See pyproject.toml for all setup configuration options.
 """
+from __future__ import annotations
 
-from setuptools import find_packages, setup
+from setuptools import setup
 
-setup(
-    name="salt-passbolt",
-    version="1.0.2",
-    packages=find_packages("src"),
-    package_dir={'': 'src'},
-    include_package_data=True,
-    install_requires=[
-        "passbolt-python-api>=0.1.2",
-    ],
-    author="Sven Seeberg (Netzbegrünung e.V.)",
-    author_email="mail@sven-seeberg.de",
-    description="Fetch passwords from Passbolt to build Saltstack pillars",
-    license="MIT",
-    keywords="Passbolt Salt Pillar",
-    url="http://github.com/netzbegruenung/salt-passbolt",
-    classifiers=[
-        'Development Status :: 5 - Production/Stable',
-        'Intended Audience :: Developers',
-        'Programming Language :: Python :: 3.4',
-        'Programming Language :: Python :: 3.5',
-        'Programming Language :: Python :: 3.6',
-    ]
-)
+if __name__ == "__main__":
+    setup()

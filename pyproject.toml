@@ -1,0 +1,25 @@
+[project]
+name = "passbolt-salt"
+version = "1.0.2"
+authors = [
+  { name="Sven Seeberg", email="sven.seeberg@netzbegruenung.de" },
+  { name="Alexander Bigga", email="alexander.bigga@verdigado.com"}
+]
+description = "Integrate Passbolt into Saltstack to manage secrets in the infrastructure of your organization"
+readme = "README.md"
+requires-python = ">=3.8"
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+]
+dependencies = [
+    "passbolt-python-api",
+]
+
+[project.urls]
+Homepage = "https://github.com/netzbegruenung/passbolt-salt"
+Issues = "https://github.com/netzbegruenung/passbolt-salt/issues"
+
+[tool.setuptools]
+license-files = ["LICENSE"]
