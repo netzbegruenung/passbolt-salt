@@ -6,20 +6,21 @@ Additionally, it is possible to only have one source of truth for passwords for 
 # License
 [MIT](LICENSE)
 
-# Setup
-1. Clone this repo 
+# Production Setup
 
-2. Go to directory, run (requires `python3-setuptools`)
+1. Go to your Salt master and install the module with `salt-pip`
+
     ```shell
-    python3 setup.py install
+    salt-pip install passbolt-salt
     ```
+
     This will install this module and its dependencies.
 
-3. Create an Passbolt account for the Salt master.
+3. Create a Passbolt account for the Salt master.
 
 4. Copy the private and public PGP key files to `/etc/salt`.
 
-5. Import the private key with
+5. Import the new Passbolt private key on the Salt master:
     ```shell
     gpg --import /etc/salt/passbolt_private.asc
     ```
