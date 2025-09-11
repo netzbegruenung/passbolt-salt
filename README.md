@@ -46,19 +46,19 @@ Additionally, it is possible to only have one source of truth for passwords for 
 Look into the [example](example) directory to see how the integration is done.
 
 1. Create Pillar sls files for the different Salt minions, insert the content below and replace the group UUID.
-    ```python
-    #!py
-    def run():
-        from salt_passbolt import fetch_passbolt_passwords
-        return fetch_passbolt_passwords("27b9abd4-af9b-4c9e-9af1-cf8cb963680c")
-    ```
-  Hint: you can find the group UUID in the URL of the Passbolt admin interface when editing a group.
+   ```python
+   #!py
+   def run():
+       from salt_passbolt import fetch_passbolt_passwords
+       return fetch_passbolt_passwords("27b9abd4-af9b-4c9e-9af1-cf8cb963680c")
+   ```
+   Hint: you can find the group UUID in the URL of the Passbolt admin interface when editing a group.
 
 2. In a state, reference secrets with their UUID. See the `example/salt/important_secrets/files/secret.conf`.
-    ```
-    password={{ pillar['passbolt']['3ec2a739-8e51-4c67-89fb-4bbfe9147e17'] }}
-    ```
-  Hint: you can find the secret UUID in the URL of your browser by clicking on the checkbox of a secret.
+   ```
+   password={{ pillar['passbolt']['3ec2a739-8e51-4c67-89fb-4bbfe9147e17'] }}
+   ```
+   Hint: you can find the secret UUID in the URL of your browser by clicking on the checkbox of a secret.
 
 # Performance
 All passwords are decrypted with a single process (gpg-agent). If many minions need to access their Pillar at the same time, the gpg-agent becomes a bottleneck. To avoid this bottleneck, the Pillar cache can be enabled for the Salt master with `pillar_cache: True`. The following crontab entry updates the Pillar cache twice a day:
