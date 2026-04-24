@@ -1,6 +1,6 @@
 [project]
 name = "passbolt-salt"
-version = "1.1.0"
+version = "1.2.0"
 authors = [
   { name="Sven Seeberg", email="sven.seeberg@netzbegruenung.de" },
   { name="Alexander Bigga", email="alexander.bigga@verdigado.com"}
@@ -17,9 +17,15 @@ dependencies = [
     "passbolt-python-api",
 ]
 
+[project.optional-dependencies]
+test = ["pytest>=7"]
+
 [project.urls]
 Homepage = "https://github.com/netzbegruenung/passbolt-salt"
 Issues = "https://github.com/netzbegruenung/passbolt-salt/issues"
 
 [tool.setuptools]
 license-files = ["LICENSE"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
