@@ -61,7 +61,30 @@ Look into the [example](example) directory to see how the integration is done.
    Hint: you can find the secret UUID in the URL of your browser by clicking on the checkbox of a secret.
 
 # Performance
-All passwords are decrypted with a single process (gpg-agent). If many minions need to access their Pillar at the same time, the gpg-agent becomes a bottleneck. To avoid this bottleneck, the Pillar cache can be enabled for the Salt master with `pillar_cache: True`. The following crontab entry updates the Pillar cache twice a day:
+
+## Using Sequoia PGP (Recommended)
+
+If the `sq` CLI from [Sequoia PGP](https://sequoia-pgp.org/) is available on your system, it will be used automatically for decryption. Sequoia is a modern, memory-safe reimplementation of OpenPGP that provides better parallelism than GnuPG.
+
+**Benefits:**
+- No gpg-agent bottleneck - each decryption runs in its own process
+- Better performance when rendering pillars for many minions simultaneously
+- Automatic fallback to GnuPG if Sequoia is not available
+
+**Requirements:**
+- Install the `sq` CLI (Sequoia command-line tool). The package name and availability vary by distribution:
+  - Debian 13 (trixie) and newer / Ubuntu 24.04 and newer: `apt install sq`
+  - Older Debian/Ubuntu: install `sequoia-sq` from `contrib`/backports, or build from source
+  - Arch Linux: `pacman -S sequoia-sq`
+  - Other distros: build from source: https://gitlab.com/sequoia-pgp/sq
+
+## Using GnuPG (Fallback)
+
+If Sequoia is not available, this module automatically falls back to GnuPG (`gpg-agent`).
+
+**Known limitation:** When rendering pillars for many minions simultaneously, the single `gpg-agent` process can become a CPU bottleneck.
+
+**Workaround:** Enable Pillar cache on the Salt master with `pillar_cache: True` and periodically update it:
 ```
 0 */12 * * * rm -rf /var/cache/salt/master/pillar_cache/* && salt '*' -b1 pillar.items
 ```
