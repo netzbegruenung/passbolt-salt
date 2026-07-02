@@ -114,11 +114,9 @@ def decode_json(data: str) -> str:
     For (obvious) security reasons empty passwords are never allowed.
     """
     try:
-        data = json.loads(data)
-        password = data["password"]
-    except Exception as e:
-        logger.exception(e)
-        raise e
+        password = json.loads(data)["password"]
+    except (ValueError, TypeError, KeyError):
+        password = data
     if not password:
         raise ValueError("Empty passwords are not allowed.")
     return password
