@@ -6,47 +6,22 @@ import json
 import logging
 import uuid
 
-import passboltapi  # pylint: disable=E0401
-
+from .api import PassboltClient, PassboltError
 from .pgp_backend import SequoiaBackend
 
 logger = logging.getLogger(__name__)
 
 _CONFIG_PATH = "/etc/salt/passbolt.ini"
-_backend_cache = None
-_backend_probed = False
 
 
-def _get_backend():
-    """
-    Return the cached SequoiaBackend, probing once per process.
-
-    Returns None if sq is unavailable or the config cannot be loaded; callers
-    must fall back to passbolt-python-api's GnuPG decryption.
-    """
-    global _backend_cache, _backend_probed
-    if _backend_probed:
-        return _backend_cache
-    _backend_probed = True
-    try:
-        config = load_config()
-        _backend_cache = SequoiaBackend(
-            key_file=config.get("USER_PRIVATE_KEY_FILE"),
-            passphrase=config.get("PASSPHRASE"),
-        )
-        logger.info("Using Sequoia (sq) for decryption.")
-    except Exception as e:
-        logger.info(f"Sequoia backend unavailable, using GnuPG fallback: {e}")
-    return _backend_cache
-
-def get_password_list(passbolt_obj: passboltapi.PassboltAPI, group_uuid: str) -> list[dict]:
+def get_password_list(client: PassboltClient, group_uuid: str) -> list[dict]:
     """
     Get list of passwords for group UUID
     """
     result = list()
     url = ("/resources.json?filter[is-shared-with-group]" +
            "={}&api-version=v2".format(group_uuid))
-    passwords = passbolt_obj.get(url)["body"]
+    passwords = client.get(url)["body"]
     if not passwords:
         raise ValueError("Got empty password list from Passbolt server.")
     for i in passwords:
@@ -59,48 +34,40 @@ def get_password_list(passbolt_obj: passboltapi.PassboltAPI, group_uuid: str) ->
     return result
 
 
-def generate_pillar(passbolt_obj: passboltapi.PassboltAPI, group_uuid: str) -> dict:
+def generate_pillar(
+    client: PassboltClient, backend: SequoiaBackend, group_uuid: str
+) -> dict:
     """
     Generate dictionary that is added to the Pillar
 
-    Uses Sequoia backend (sq CLI) if available for better parallelism,
-    falls back to GnuPG (gpg-agent) if Sequoia is not available.
+    Every failure raises PassboltError. A secret that cannot be fetched,
+    decrypted or is empty must never be silently omitted: states would then
+    render with an empty password instead of failing.
     """
     try:
-        result = get_password_list(passbolt_obj, group_uuid)
+        result = get_password_list(client, group_uuid)
     except Exception as e:
-        logger.error(f"Failed to obtain Passbolt object list for group {group_uuid}. Verify that the Salt Master Passbolt user has access to this group.")
-        logger.exception(e)
-        return {}
+        raise PassboltError(
+            f"Failed to obtain the Passbolt object list for group {group_uuid}. Verify that "
+            "the Salt master's Passbolt user has access to this group."
+        ) from e
     salt = {'passbolt': {}}
-    backend = _get_backend()
 
     for i in result:
         try:
-            resource = passbolt_obj.get("/secrets/resource/{}.json?api-version=v2".format(i["id"]))
+            resource = client.get("/secrets/resource/{}.json?api-version=v2".format(i["id"]))
         except Exception as e:
-            logger.error(f"Failed to fetch password {i['id']}.")
-            logger.exception(e)
-            continue
+            raise PassboltError(f"Failed to fetch secret {i['id']} ({i['name']}).") from e
 
         try:
-            encrypted_data = resource["body"]["data"]
-            if backend is not None:
-                try:
-                    decrypted = backend.decrypt(encrypted_data)
-                except Exception as e:
-                    logger.warning(f"Sequoia decryption failed for {i['id']}, falling back to GnuPG: {e}")
-                    decrypted = passbolt_obj.decrypt(encrypted_data)
-            else:
-                decrypted = passbolt_obj.decrypt(encrypted_data)
-            password = decode_json(decrypted)
+            password = decode_json(backend.decrypt(resource["body"]["data"]))
         except ValueError as e:
-            logger.warning(f"Passbolt returned an empty secret for {i['id']}. This secret is not added to the passbolt pillar.")
-            continue
+            raise PassboltError(
+                f"Passbolt returned an empty secret for {i['id']} ({i['name']}). "
+                "Empty passwords are not allowed."
+            ) from e
         except Exception as e:
-            logger.error(f"Failed to decode password {i['id']}. It will not be added to the Pillar.")
-            logger.exception(e)
-            continue
+            raise PassboltError(f"Failed to decrypt secret {i['id']} ({i['name']}).") from e
         salt['passbolt'][i["id"]] = password
     return salt
 
@@ -126,25 +93,72 @@ def load_config(config_path: str = _CONFIG_PATH) -> dict:
     """
     Load configuration from passbolt.ini file.
 
+    Option names are upper-cased, because configparser lower-cases them while
+    the documented config file spells them in upper case.
+
+    Interpolation is disabled so that a `%` in the passphrase is taken
+    literally instead of raising an interpolation error.
+
     Returns:
         Configuration dictionary
     """
-    config = configparser.ConfigParser()
+    config = configparser.ConfigParser(interpolation=None)
     with open(config_path) as f:
         config.read_file(f)
-    return dict(config["PASSBOLT"])
+    return {key.upper(): value for key, value in config["PASSBOLT"].items()}
 
 
 def fetch_passbolt_passwords(group_uuid: str) -> dict:
     """
     Generate Passbolt API object and call API fetch function
+
+    Raises PassboltError on any failure, which aborts the pillar render. This
+    is deliberate: returning a partial or empty pillar would let states deploy
+    empty secrets whenever Passbolt is unreachable or the key is unusable.
     """
     try:
-        uuid_obj = uuid.UUID(group_uuid, version=4)
-    except ValueError:
-        logger.error(f"{group_uuid} is not a valid UUID.")
-        return {}
+        uuid.UUID(group_uuid, version=4)
+    except ValueError as e:
+        raise PassboltError(f"{group_uuid} is not a valid UUID.") from e
     logger.debug(f"Fetching passwords for group {group_uuid}")
-    with passboltapi.PassboltAPI(config_path=_CONFIG_PATH) as passbolt:
-        salt = generate_pillar(passbolt, group_uuid)
-    return salt
+
+    try:
+        config = load_config()
+    except Exception as e:
+        raise PassboltError(
+            f"Failed to load the Passbolt configuration from {_CONFIG_PATH}."
+        ) from e
+
+    key_file = config.get("USER_PRIVATE_KEY_FILE")
+    if not key_file:
+        raise PassboltError(f"Missing value for USER_PRIVATE_KEY_FILE in {_CONFIG_PATH}.")
+
+    try:
+        backend = SequoiaBackend(key_file=key_file, passphrase=config.get("PASSPHRASE"))
+    except Exception as e:
+        raise PassboltError(
+            "Sequoia (sq) is required to decrypt Passbolt secrets. Install the sq CLI on "
+            "the Salt master."
+        ) from e
+
+    # Constructed outside the request handling below, because reading the key
+    # file happens here: those failures must not be reported as the server
+    # being unreachable.
+    try:
+        client = PassboltClient(config, backend)
+    except RuntimeError as e:
+        raise PassboltError(f"Failed to read the PGP key from {key_file}: {e}") from e
+    except Exception as e:
+        raise PassboltError(f"Invalid Passbolt configuration in {_CONFIG_PATH}: {e}") from e
+
+    try:
+        client.login()
+        return generate_pillar(client, backend, group_uuid)
+    except PassboltError:
+        raise
+    except Exception as e:
+        raise PassboltError(
+            f"Failed to reach the Passbolt server at {config.get('SERVER')}."
+        ) from e
+    finally:
+        client.close()
