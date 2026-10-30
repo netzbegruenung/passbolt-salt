@@ -36,6 +36,7 @@ Additionally, it is possible to only have one source of truth for passwords for 
     USER_PRIVATE_KEY_FILE = /etc/salt/passbolt_private.asc
     PASSPHRASE = [REPLACE WITH PASSBOLT USER PASSWORD]
     #USER_FINGERPRINT = [optional, derived from USER_PRIVATE_KEY_FILE if omitted]
+    #CACHE_TTL = [optional, seconds a group's secrets are cached, default 600, 0 disables]
     ```
 
 6. Change file permissions:
@@ -84,11 +85,31 @@ All OpenPGP operations are performed by the `sq` CLI, which runs in its own proc
 GnuPG, there is no single `gpg-agent` to serialise on, so rendering pillars for many minions in
 parallel is not bottlenecked on one process.
 
-If pillar rendering is still too slow for your setup, enable the Pillar cache on the Salt master with
-`pillar_cache: True` and refresh it periodically:
-```
-0 */12 * * * rm -rf /var/cache/salt/master/pillar_cache/* && salt '*' -b1 pillar.items
-```
+## Session reuse and cache
+
+Fetching a group costs one request plus one `sq` decryption per secret. To keep this from repeating
+for every minion, each Salt master worker process
+
+- logs in to Passbolt once and keeps the session. If Passbolt answers a request with 401 (session
+  expired), it logs in again once and retries.
+- caches the pillar of each group in memory for `CACHE_TTL` seconds (default 600). Nothing is
+  written to disk; the cache is gone when the Salt master restarts.
+
+**Changes in Passbolt take up to `CACHE_TTL` seconds to reach the minions.** To publish a changed
+secret immediately, restart the Salt master. Set `CACHE_TTL = 0` in `passbolt.ini` to disable the
+cache; the session is then still reused.
+
+Each worker process keeps its own session and cache. A master with 16 workers therefore holds up to
+16 Passbolt sessions and fetches each group at most 16 times per `CACHE_TTL`, regardless of the
+number of minions.
+
+Errors are never cached, and an expired entry is not served when refreshing it fails: the render
+fails as described in [Failure Behaviour](#failure-behaviour). After a failure the session is
+dropped and the next render logs in again. Changing `passbolt.ini` drops the session and the cache
+with the next render.
+
+Salt's own `pillar_cache` is no substitute: since Salt 3008.3 the master does not use it for pillar
+requests from minions.
 
 # Upgrading from 1.x
 

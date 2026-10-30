@@ -274,3 +274,44 @@ def test_login_with_real_sq_decryption(keypair_no_pass, sq_encrypt):
     assert client.fingerprint == backend.fingerprint()
     posts = [call for call in client._session.calls if call[0] == "POST"]
     assert posts[1][2]["gpg_auth"]["user_token_result"] == TOKEN
+
+
+def expiring_handler(expired_responses=1):
+    """Server whose resource listing answers 401 a number of times first."""
+    inner = default_handler()
+    state = {"expired": expired_responses, "logins": 0}
+
+    def handler(method, url, body):
+        if url.endswith("/resources.json"):
+            if state["expired"]:
+                state["expired"] -= 1
+                return FakeResponse(status_code=401, text="Authentication is required to continue")
+            return FakeResponse(json_body={"body": ["ok"]})
+        if method == "POST" and url.endswith(LOGIN_URL):
+            if "user_token_result" not in body["gpg_auth"]:
+                # Stage 1 of a login: count it and hand out a challenge.
+                state["logins"] += 1
+                return FakeResponse(headers={"X-GPGAuth-User-Auth-Token": "ENCRYPTED"})
+            return FakeResponse(headers={"X-GPGAuth-Authenticated": "true"})
+        return inner(method, url, body)
+
+    return handler, state
+
+
+def test_get_logs_in_again_once_when_session_expired():
+    handler, state = expiring_handler(expired_responses=1)
+    client = make_client(handler)
+    client.login()
+
+    assert client.get("/resources.json") == {"body": ["ok"]}
+    assert state["logins"] == 2
+
+
+def test_get_raises_when_session_still_rejected_after_relogin():
+    handler, state = expiring_handler(expired_responses=2)
+    client = make_client(handler)
+    client.login()
+
+    with pytest.raises(requests.exceptions.HTTPError):
+        client.get("/resources.json")
+    assert state["logins"] == 2
