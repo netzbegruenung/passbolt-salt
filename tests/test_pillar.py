@@ -337,6 +337,14 @@ def test_fetch_does_not_serve_stale_pillar_when_refresh_fails(passbolt):
         salt_passbolt.fetch_passbolt_passwords(GROUP_UUID)
 
 
+def test_fetch_drops_expired_entries_of_other_groups(passbolt):
+    salt_passbolt.fetch_passbolt_passwords(OTHER_GROUP_UUID)
+    passbolt.now += 600
+    salt_passbolt.fetch_passbolt_passwords(GROUP_UUID)
+
+    assert list(salt_passbolt._cache) == [GROUP_UUID]
+
+
 def test_fetch_wraps_login_connection_errors(passbolt, monkeypatch):
     def unreachable(self):
         raise ConnectionError("connection refused")

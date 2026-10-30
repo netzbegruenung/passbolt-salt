@@ -197,13 +197,18 @@ def fetch_passbolt_passwords(group_uuid: str) -> dict:
             _cache.clear()
             _config = config
 
+        # Drop every expired entry, not only this group's: secrets of a group
+        # that is no longer rendered must not stay in memory past CACHE_TTL.
+        now = time.monotonic()
+        for expired in [key for key, (expires, _) in _cache.items() if expires <= now]:
+            del _cache[expired]
+
         cached = _cache.get(group_uuid)
-        if ttl and cached and cached[0] > time.monotonic():
+        if cached:
             logger.debug(f"Serving cached passwords for group {group_uuid}")
             return copy.deepcopy(cached[1])
 
         logger.debug(f"Fetching passwords for group {group_uuid}")
-        _cache.pop(group_uuid, None)
         pillar = _fetch(config, group_uuid)
         if ttl:
             _cache[group_uuid] = (time.monotonic() + ttl, pillar)
