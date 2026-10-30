@@ -143,18 +143,29 @@ class PassboltClient:
     def get(self, url: str) -> dict:
         """
         GET a Passbolt API endpoint and return the decoded JSON body.
+
+        The client is kept alive between pillar renders, so its session can
+        expire on the server side. A 401 therefore triggers one fresh login and
+        a single retry; a second 401 is raised like any other HTTP error.
         """
-        response = self._session.get(
-            self.server_url + url,
-            headers=self._headers(),
-            timeout=self.timeout,
-        )
+        response = self._get(url)
+        if response.status_code == requests.codes.unauthorized:
+            logger.info(f"Passbolt session expired, logging in to {self.server_url} again.")
+            self.login()
+            response = self._get(url)
         try:
             response.raise_for_status()
         except requests.exceptions.HTTPError:
             logger.error(f"Passbolt request to {url} failed: {_describe(response)}")
             raise
         return response.json()
+
+    def _get(self, url: str):
+        return self._session.get(
+            self.server_url + url,
+            headers=self._headers(),
+            timeout=self.timeout,
+        )
 
     def _headers(self) -> dict:
         return {"X-CSRF-Token": self._session.cookies.get("csrfToken", "")}
